@@ -7,10 +7,17 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.Part;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static no.test.config.MediaTypes.fromExtension;
 import static no.test.service.XcelService.finnBytteOrd;
@@ -30,9 +37,26 @@ public class RequestController {
         return getResponseEntity("dokumentfletting/Mottakere_fiktive_FNR_fletteloesning_SYSTEST.xlsx");
     }
 
-    @RequestMapping("/flett")
-    ResponseEntity flett() throws IOException {
+    @RequestMapping("/flettresources")
+    ResponseEntity flettresources() throws IOException {
         return createResponseEntity("testfil.docx", new WordService(finnBytteOrd()).flettDokument());
+    }
+
+    @PostMapping(value = "/flett")
+    ResponseEntity flett(final HttpServletRequest request) throws IOException, ServletException {
+        final List<Part> xlsxParts = getPartFromRequest(request, "xlsx");
+        final HashMap<String, String> bytteord = finnBytteOrd(xlsxParts.get(0).getInputStream());
+
+        final List<Part> docxParts = getPartFromRequest(request, "docx");
+        final InputStream docxFileContent = docxParts.get(0).getInputStream();
+
+        return createResponseEntity("testfil.docx", new WordService(bytteord).flettDokument(docxFileContent));
+    }
+
+    private List<Part> getPartFromRequest(final HttpServletRequest request, final String fileType)
+            throws IOException, ServletException {
+        return request.getParts().stream().filter(part -> fileType.equals(part.getName()) && part.getSize() > 0).collect(
+                Collectors.toList());
     }
 
     private ResponseEntity getResponseEntity(final String fileName) {

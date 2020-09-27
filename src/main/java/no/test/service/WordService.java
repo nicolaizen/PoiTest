@@ -7,6 +7,7 @@ import org.springframework.core.io.InputStreamResource;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -21,6 +22,13 @@ public final class WordService {
 
     public void setbytteOrdMap(final HashMap<String, String> bytteOrdMap) {
         this.bytteOrdMap = bytteOrdMap;
+    }
+
+    public InputStreamResource flettDokument(final InputStream is) throws IOException {
+        final XWPFDocument document = openData(is);
+        flettTabellerAvDoc(document);
+        flettTextParagraphs(document);
+        return dokumentTilInputStreamResource(document);
     }
 
     public InputStreamResource flettDokument() throws IOException {
@@ -41,10 +49,14 @@ public final class WordService {
         }
     }
 
+    public XWPFDocument openData(final InputStream is) throws IOException {
+        return new XWPFDocument(is);
+    }
+
     public XWPFDocument openData() throws IOException {
         final ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         final String filename = "dokumentfletting/Dokumentmal_fletteloesning_SYSTEST.docx";
-        return new XWPFDocument(classloader.getResourceAsStream(filename));
+        return openData(classloader.getResourceAsStream(filename));
     }
 
     private void flettTabellerAvDoc(final XWPFDocument doc) {

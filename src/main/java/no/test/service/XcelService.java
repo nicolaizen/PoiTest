@@ -15,8 +15,17 @@ import java.util.HashMap;
 public final class XcelService {
     private static final Logger LOGGER = LoggerFactory.getLogger(XcelService.class);
 
+    public static HashMap<String, String> finnBytteOrd(final InputStream is) {
+        final XSSFWorkbook workbook = openData(is);
+        return finnBytteOrdFraWorkbook(workbook);
+    }
+
     public static HashMap<String, String> finnBytteOrd() {
         final XSSFWorkbook workbook = openData();
+        return finnBytteOrdFraWorkbook(workbook);
+    }
+
+    private static HashMap<String, String> finnBytteOrdFraWorkbook(final XSSFWorkbook workbook) {
         LOGGER.info("Antall sider funnet i xlsx er: " + workbook.getNumberOfSheets());
 
         final XSSFSheet sheet = workbook.getSheetAt(0);
@@ -59,16 +68,19 @@ public final class XcelService {
         return null;
     }
 
-    private static XSSFWorkbook openData() {
-        final ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-        final String filename = "dokumentfletting/Mottakere_fiktive_FNR_fletteloesning_SYSTEST.xlsx";
-        final InputStream is = classloader.getResourceAsStream(filename);
-
+    private static XSSFWorkbook openData(final InputStream is) {
         try {
             return new XSSFWorkbook(is);
         } catch (final IOException e) {
             LOGGER.error("Fikk ikke gjort om FileInputStream til XSSFWorkbook. Trace: {}", e.getMessage());
             return null;
         }
+    }
+
+    private static XSSFWorkbook openData() {
+        final ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+        final String filename = "dokumentfletting/Mottakere_fiktive_FNR_fletteloesning_SYSTEST.xlsx";
+        final InputStream is = classloader.getResourceAsStream(filename);
+        return openData(is);
     }
 }
