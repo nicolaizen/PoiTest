@@ -42,6 +42,7 @@ public final class XcelService {
 
         for (int i = 0; i < row1.getPhysicalNumberOfCells() && i < row2.getPhysicalNumberOfCells(); i++) {
             bytteOrdMap.put(String.format("«%s»", cellToString(row1.getCell(i))), cellToString(row2.getCell(i)));
+            bytteOrdMap.put(String.format("<%s>", cellToString(row1.getCell(i))), cellToString(row2.getCell(i)));
         }
         return bytteOrdMap;
     }

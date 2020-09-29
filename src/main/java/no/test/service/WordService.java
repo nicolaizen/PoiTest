@@ -1,9 +1,14 @@
 package no.test.service;
 
 import org.apache.poi.xwpf.usermodel.*;
+import org.apache.xmlbeans.XmlCursor;
+import org.apache.xmlbeans.XmlException;
+import org.apache.xmlbeans.XmlObject;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTR;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.InputStreamResource;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -28,6 +33,8 @@ public final class WordService {
         final XWPFDocument document = openData(is);
         flettTabellerAvDoc(document);
         flettTextParagraphs(document);
+        flettTextBox(document);
+        flettHeadere(document);
         return dokumentTilInputStreamResource(document);
     }
 
@@ -35,6 +42,8 @@ public final class WordService {
         final XWPFDocument document = openData();
         flettTabellerAvDoc(document);
         flettTextParagraphs(document);
+        flettTextBox(document);
+        flettHeadere(document);
         return dokumentTilInputStreamResource(document);
     }
 
@@ -118,6 +127,41 @@ public final class WordService {
             if (bytteOrdMap.containsKey(elem.toString())) {
                 final XWPFRun run = paragraph.getRuns().get(index);
                 run.setText(bytteOrdMap.get(elem.toString()), 0);
+            }
+        }
+    }
+
+    public void flettTextBox(final XWPFDocument document) {
+        for (final XWPFParagraph paragraph : document.getParagraphs()) {
+            final XmlCursor cursor = paragraph.getCTP().newCursor();
+            cursor.selectPath(
+                    "declare namespace w='http://schemas.openxmlformats.org/wordprocessingml/2006/main' .//*/w:txbxContent/w:p/w:r");
+
+            while (cursor.hasNextSelection()) {
+                cursor.toNextSelection();
+                final XmlObject xml = cursor.getObject();
+                try {
+                    final XWPFRun run = new XWPFRun(CTR.Factory.parse(xml.xmlText()), (IRunBody) paragraph);
+                    final String text = run.getText(0);
+
+                    for (final Map.Entry<String, String> ordPar : bytteOrdMap.entrySet()) {
+                        if (text != null && text.contains(ordPar.getKey())) {
+                            run.setText(text.replace(ordPar.getKey(), ordPar.getValue()), 0);
+                        }
+                    }
+
+                    xml.set(run.getCTR());
+                } catch (final XmlException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public void flettHeadere(final XWPFDocument document) {
+        for (final XWPFHeader header : document.getHeaderList()) {
+            for (final XWPFParagraph paragraph : header.getParagraphs()) {
+                replaceParagraph(paragraph);
             }
         }
     }
