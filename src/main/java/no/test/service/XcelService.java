@@ -15,9 +15,9 @@ import java.util.HashMap;
 public final class XcelService {
     private static final Logger LOGGER = LoggerFactory.getLogger(XcelService.class);
 
-    public static HashMap<String, String> finnBytteOrd(final InputStream is) {
+    public static HashMap<String, String> finnBytteOrd(final InputStream is, final int rownum) {
         final XSSFWorkbook workbook = openData(is);
-        return finnBytteOrdFraWorkbook(workbook);
+        return finnBytteOrdFraWorkbook(workbook, rownum);
     }
 
     public static HashMap<String, String> finnBytteOrd() {
@@ -25,24 +25,30 @@ public final class XcelService {
         return finnBytteOrdFraWorkbook(workbook);
     }
 
+    public static int finnAntallRaderFraInputStream(final InputStream is) {
+        return openData(is).getSheetAt(0).getPhysicalNumberOfRows();
+    }
+
     private static HashMap<String, String> finnBytteOrdFraWorkbook(final XSSFWorkbook workbook) {
+        return finnBytteOrdFraWorkbook(workbook, 2);
+    }
+
+    private static HashMap<String, String> finnBytteOrdFraWorkbook(final XSSFWorkbook workbook, final int rownum) {
         LOGGER.info("Antall sider funnet i xlsx er: " + workbook.getNumberOfSheets());
 
         final XSSFSheet sheet = workbook.getSheetAt(0);
 
-        final XSSFRow row1 = sheet.getRow(0);
-        final XSSFRow row2 = sheet.getRow(2);
-
-        final int antallCeller = row1.getPhysicalNumberOfCells();
+        final XSSFRow headerRow = sheet.getRow(0);
+        final XSSFRow variableRow = sheet.getRow(rownum);
 
         LOGGER.info("Antall rader funnet på første side i xlsx er: " + sheet.getPhysicalNumberOfRows());
-        LOGGER.info("Antall celler funnet i første rad i xlsx er: " + antallCeller);
+        LOGGER.info("Antall celler funnet i første rad i xlsx er: " + headerRow.getPhysicalNumberOfCells());
 
         final HashMap<String, String> bytteOrdMap = new HashMap<>();
 
-        for (int i = 0; i < row1.getPhysicalNumberOfCells() && i < row2.getPhysicalNumberOfCells(); i++) {
-            bytteOrdMap.put(String.format("«%s»", cellToString(row1.getCell(i))), cellToString(row2.getCell(i)));
-            bytteOrdMap.put(String.format("<%s>", cellToString(row1.getCell(i))), cellToString(row2.getCell(i)));
+        for (int i = 0; i < headerRow.getPhysicalNumberOfCells() && i < variableRow.getPhysicalNumberOfCells(); i++) {
+            bytteOrdMap.put(String.format("«%s»", cellToString(headerRow.getCell(i))), cellToString(variableRow.getCell(i)));
+            bytteOrdMap.put(String.format("<%s>", cellToString(headerRow.getCell(i))), cellToString(variableRow.getCell(i)));
         }
         return bytteOrdMap;
     }

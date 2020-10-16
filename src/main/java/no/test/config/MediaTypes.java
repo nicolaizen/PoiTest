@@ -16,7 +16,8 @@ import java.util.Map;
  */
 public enum MediaTypes {
     XCEL("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-    WORD("docx", "application/msword");
+    WORD("docx", "application/msword"),
+    ZIP("zip", "application/zip");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaTypes.class);
     private final String extension;

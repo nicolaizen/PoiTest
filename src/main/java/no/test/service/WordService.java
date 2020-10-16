@@ -7,7 +7,6 @@ import org.apache.xmlbeans.XmlObject;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTR;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.InputStreamResource;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -29,29 +28,29 @@ public final class WordService {
         this.bytteOrdMap = bytteOrdMap;
     }
 
-    public InputStreamResource flettDokument(final InputStream is) throws IOException {
+    public ByteArrayInputStream flettDokument(final InputStream is) throws IOException {
         final XWPFDocument document = openData(is);
         flettTabellerAvDoc(document);
         flettTextParagraphs(document);
         flettTextBox(document);
         flettHeadere(document);
-        return dokumentTilInputStreamResource(document);
+        return dokumentTilByteArrayInputStream(document);
     }
 
-    public InputStreamResource flettDokument() throws IOException {
+    public ByteArrayInputStream flettDokument() throws IOException {
         final XWPFDocument document = openData();
         flettTabellerAvDoc(document);
         flettTextParagraphs(document);
         flettTextBox(document);
         flettHeadere(document);
-        return dokumentTilInputStreamResource(document);
+        return dokumentTilByteArrayInputStream(document);
     }
 
-    private InputStreamResource dokumentTilInputStreamResource(final XWPFDocument document) {
+    private ByteArrayInputStream dokumentTilByteArrayInputStream(final XWPFDocument document) {
         try {
             final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             document.write(byteArrayOutputStream);
-            return new InputStreamResource(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()));
+            return new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
         } catch (final IOException e) {
             LOGGER.error("Fikk ikke skrevet document til byteArrayOutputStream. Exception: {}", e.getMessage());
             return null;

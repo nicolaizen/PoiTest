@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.Part;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -20,7 +21,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static no.test.config.MediaTypes.fromExtension;
+import static no.test.service.XcelService.finnAntallRaderFraInputStream;
 import static no.test.service.XcelService.finnBytteOrd;
+import static no.test.util.ZipPacker.packZip;
 
 @SuppressWarnings({ "unused", "JavaDoc" })
 @RestController
@@ -39,18 +42,33 @@ public class RequestController {
 
     @RequestMapping("/flettresources")
     ResponseEntity flettresources() throws IOException {
-        return createResponseEntity("testfil.docx", new WordService(finnBytteOrd()).flettDokument());
+        return createResponseEntity("testfil.docx", new InputStreamResource(new WordService(finnBytteOrd()).flettDokument()));
     }
 
     @PostMapping(value = "/flett")
     ResponseEntity flett(final HttpServletRequest request) throws IOException, ServletException {
         final List<Part> xlsxParts = getPartFromRequest(request, "xlsx");
-        final HashMap<String, String> bytteord = finnBytteOrd(xlsxParts.get(0).getInputStream());
+        final int filerSomSkalFlettes = finnAntallRaderFraInputStream(xlsxParts.get(0).getInputStream()) - 1;
 
-        final List<Part> docxParts = getPartFromRequest(request, "docx");
-        final InputStream docxFileContent = docxParts.get(0).getInputStream();
+        if (filerSomSkalFlettes <= 0){
+            LOGGER.warn("Det er for få rader for fletting");
+            return null;
+        }
 
-        return createResponseEntity("testfil.docx", new WordService(bytteord).flettDokument(docxFileContent));
+        final WordService wordService = new WordService(null);
+        final ByteArrayInputStream[] flettedeByteArrayInputStream = new ByteArrayInputStream[filerSomSkalFlettes];
+
+        for (int filNummer = 0; filNummer < filerSomSkalFlettes; filNummer++) {
+            final HashMap<String, String> bytteord = finnBytteOrd(xlsxParts.get(0).getInputStream(), filNummer +1);
+
+            final List<Part> docxParts = getPartFromRequest(request, "docx");
+            final InputStream docxFileContent = docxParts.get(0).getInputStream();
+
+            wordService.setbytteOrdMap(bytteord);
+            flettedeByteArrayInputStream[filNummer] = wordService.flettDokument(docxFileContent);
+        }
+
+        return createResponseEntity("FletteResultat.zip", packZip(flettedeByteArrayInputStream));
     }
 
     private List<Part> getPartFromRequest(final HttpServletRequest request, final String fileType)
